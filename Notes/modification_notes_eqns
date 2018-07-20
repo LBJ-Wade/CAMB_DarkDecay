@@ -1,0 +1,406 @@
+differences: (1) is CAMB-Feb09, (2) is modified camb
+
+> diff CAMB-Feb09/equations.f90 camb/equations_new.f90
+
+1. arbitrary:
+1c1
+< ! Equations module for dark energy with constant equation of state parameter w
+---
+> !+ Equations module for dark energy with constant equation of state parameter w
+
+
+
+2. Actual MODIFICATION!!!
+36,37c36,39
+<          GetOmegak = 1 - (CP%omegab+CP%omegac+CP%omegav+CP%omegan)
+<
+---
+> !         GetOmegak = 1 - (CP%omegab+CP%omegac+CP%omegav+CP%omegan)
+>              ! MODIFIED
+>          GetOmegak = 1 - (CP%omegab+CP%omegac+CP%omegav+CP%omegan+CP%omegas)
+>
+
+
+
+3.
+64c66,68
+<         grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
+---
+>         ! MODIFIED
+>        ! grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
+>         grhoa2=grhok*a2+grhob*a+grhog+grhornomass+(grhoc+grhos)*a**(4-io)
+
+
+
+4.
+118a123,125
+>             ! MODIFIED
+>             integer ste
+>
+
+5.
+376a384,388
+>          ! MODIFIED
+>          EV%ste=EV%nvar+1
+>          !EV%nvar=EV%nvar+2*EV%lmaxnr+1
+>          EV%nvar=EV%nvar+EV%lmaxnr+1
+>
+
+
+
+6.
+662a675,676
+>         !MODIFIED
+>         real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot
+
+
+
+7.
+684a699,705
+>         ! MODIFIED
+>         clxs = y(EV%ste)
+>         qs = y(EV%ste+1)
+>         qsdot = yprime(EV%ste+1)
+>         pis = y(EV%ste+2)
+>         pisdot = yprime(EV%ste+2)
+>
+
+
+
+8.
+688c709,712
+<         grhoc_t=grhoc/a
+---
+>         ! MODIFIED
+>        ! grhoc_t=grhoc/a
+>         grhoc_t=grhoc*a**(2-io)
+>         grhos_t=grhos*a**(2-io)
+
+
+
+9. arbitrary
+692a717
+>
+
+
+
+10.
+721a747,749
+>         ! MODIFIED
+>         grho = grho + grhos_t
+>         gpres = gpres + grhos_t/3.0
+
+
+
+11.
+730a759,763
+>         ! MODIFIED
+>         dgrho = dgrho + grhos_t*clxs
+>         dgq = dgq + grhos_t*qs
+>         dgpi = dgpi + grhos_t*pis
+>
+
+
+
+12.
+772a806,807
+>         ! MODIFIED
+>         pidot_sum = pidot_sum + grhos_t*pisdot
+
+
+
+13. Arbitrary
+780a816,818
+> !e.g. to get only late-time ISW
+> !  if (1/a-1 < 30) ISW=0
+>
+
+
+
+14. arbitrary
+782c820
+<         sources(1)= ISW +  ((-9.D0/160.D0*pig-27.D0/80.D0*ypol(2))/k**2*opac(j)+(11.D0/10.D0*sigma- &
+---
+>     sources(1)= ISW +  ((-9.D0/160.D0*pig-27.D0/80.D0*ypol(2))/k**2*opac(j)+(11.D0/10.D0*sigma- &
+
+
+
+15. Arbitrary
+790a829,831
+> ! Doppler term
+> !   sources(1)=  (sigma+vb)/k*dvis(j)+((-2.D0*adotoa*sigma+vbdot)/k-1.D0/k**2*dgpi)*vis(j) &
+> !         +1.D0/k/EV%Kf(1)*vis(j)*etak
+
+
+
+16. Arbitrary
+792c833
+< !Equivalent result
+---
+> !Equivalent full result
+
+
+
+17. Arbitrary
+827,829d867
+<        !  sources(3) = -2*phi/f_K(CP%tau0-tau)
+<
+<
+
+
+
+18.
+970a1009,1012
+>         ! MODIFIED
+>         !integer, parameter :: i_clxg=1,i_clxr=2,i_clxc=3, i_clxb=4, &
+>         !        i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vq=12
+>        ! integer, parameter :: i_max = i_vq
+
+
+
+19.
+972,973c1014,1015
+<                 i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vq=12
+<         integer, parameter :: i_max = i_vq
+---
+>              i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vq=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17
+>         integer, parameter :: i_max = i_pis
+
+
+
+20.
+1007,1008c1049,1052
+<
+<         om = (grhob+grhoc)/sqrt(3*(grhog+grhonu))
+---
+>
+>         ! MODIFIED
+>         !om = (grhob+grhoc)/sqrt(3*(grhog+grhonu))
+>         om = (grhob+grhoc)/sqrt(3*(grhog+grhonu+grhos))
+
+
+
+21.
+1010c1054,1056
+<         Rv=grhonu/(grhonu+grhog)
+---
+>         !Rv=grhonu/(grhonu+grhog)
+>         Rv=grhonu/(grhonu+grhog+grhos)
+>
+
+
+
+22.
+1037a1084,1088
+>           ! MODIFIED
+>         initv(1,i_clxs)=0
+>         initv(1,i_qs)=0
+>         initv(1,i_pis)=0
+>
+
+
+
+23.
+1107a1159,1166
+>         ! MODIFIED
+>         y(EV%ste)=InitVec(i_clxs)
+>         y(EV%ste+1)=InitVec(i_qs)
+>         y(EV%ste+2)=InitVec(i_pis)
+>         do l=3,EV%lmaxnr
+>            y(l+EV%ste) = 0.0d0
+>         end do
+>
+
+
+
+24. Arbitrary
+1222c1281
+<           ! -15/28._dl*x**2*(bigR-1)/(15+4*bigR)*Magnetic*(1-5./2*omtau/(2*bigR+15))
+---
+> !-15/28._dl*x**2*(bigR-1)/(15+4*bigR)*Magnetic*(1-5./2*omtau/(2*bigR+15))
+
+
+
+25.Arbitrary
+1228c1287
+<           !+ 15._dl/14*x*(bigR-1)/(4*bigR+15)*Magnetic*(1 - 15./2*omtau/(2*bigR+15))
+---
+> !          + 15._dl/14*x*(bigR-1)/(4*bigR+15)*Magnetic*(1 - 15./2*omtau/(2*bigR+15))
+
+
+
+26.arbitrary
+1235,1237c1294,1296
+<            !+ (bigR-1)/bigR*Magnetic*(1-15./14*x**2/(15+4*bigR))
+<          aj3r=  -2._dl/21._dl/(bigR+5)*x**3*elec
+<            !+ 3._dl/7*x*(bigR-1)/bigR*Magnetic
+---
+> !           + (bigR-1)/bigR*Magnetic*(1-15./14*x**2/(15+4*bigR))
+>          aj3r=  -2._dl/21._dl/(bigR+5)*x**3*elec !&
+> !           + 3._dl/7*x*(bigR-1)/bigR*Magnetic
+
+
+
+27. Add extra parameter
+1313c1372
+<         real(dl) clxc, clxb, clxg, clxr, k,k2
+---
+>         real(dl) clxc, clxb, clxg, clxr, k,k2,clxs
+
+
+
+28.
+1322a1382,1383
+>         ! MODIFIED
+>         clxs = y(EV%ste)
+
+
+
+29.
+1330a1392,1393
+>          ! MODIFIED
+>         Arr(Transfer_s) = clxs/k2
+
+
+
+30. seems arbitrary
+1343,1345c1406,1408
+<      !  dgrho=dgrho+y(EV%w_ix)*grhov*a**(-1-3*w_lam)
+<      !   Arr(Transfer_r) = y(EV%w_ix)/k2
+<
+---
+> !       dgrho=dgrho+y(EV%w_ix)*grhov*a**(-1-3*w_lam)
+> !        Arr(Transfer_r) = y(EV%w_ix)/k2
+> !
+
+
+
+31.
+1349,1352c1412,1417
+<
+<         dgrho = dgrho+(clxc*grhoc + clxb*grhob)/a
+<         grho =  grho+(grhoc+grhob)/a
+<
+---
+>         ! MODIFIED
+>          !dgrho = dgrho+(clxc*grhoc + clxb*grhob)/a
+>          !grho =  grho+(grhoc+grhob)/a
+>         dgrho = dgrho+clxc*grhoc*a**(2-io) + clxb*grhob/a + clxs*grhos*a**(2-io)
+>         grho =  grho+grhoc*a**(2-io)+grhob/a
+>
+
+
+
+32.
+1385a1451,1452
+>         ! MODIFIED
+>         real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot
+
+
+
+33.
+1397a1465,1474
+>         !clxs = 4.0/3.0*clxc
+>         !if (a>0.999) write(1,'(10E15.5)') k,a,clxs,4.0/3.0*clxc
+>
+>         ! MODIFIED
+>         clxs=ay(EV%ste)
+>         qs=ay(EV%ste+1)
+>         pis=ay(EV%ste+2)
+>
+>         !clxs = 0.01
+>         !write(1,'(10E15.5)') k,a,clxs,clxc
+
+
+
+34.
+1406c1483,1486
+<         grhoc_t=grhoc/a
+---
+>         ! MODIFIED
+>         !grhoc_t=grhoc/a
+>         grhoc_t=grhoc*a**(2-io)
+>         grhos_t=grhos*a**(2-io)
+
+
+
+35. changed spaces, arbitrary
+1414,1415c1494
+<
+<
+---
+>
+
+
+
+36.
+1444a1524,1525
+>         ! MODIFIED
+>         grho = grho + grhos_t
+
+
+
+37.
+1455a1537,1540
+>         ! MODIFIED - WAS MISTAKE HERE
+>         dgrho = dgrho + grhos_t*clxs
+>         dgq = dgq + grhos_t*qs
+>
+
+
+
+38. changed spacing, arbitrary
+1461d1545
+<
+
+
+
+39. changed spacing, arbitrary
+1465c1549
+<
+---
+>
+
+
+
+40. changed spacing, arbitrary
+1477,1478c1561
+<
+<
+---
+>
+
+
+
+41.
+1495a1579,1592
+>        ! MODIFIED
+>         clxsdot=-k*(4._dl/3._dl*z+qs)-adotoa/(1._dl+CP%alpha)*(clxs-clxc)
+>         ayprime(EV%ste)=clxsdot
+>         qsdot=k*(clxs-2._dl*pis)/3._dl-adotoa/(1._dl+CP%alpha)*qs
+>         ayprime(EV%ste+1)=qsdot
+>         pisdot=k*(0.4_dl*qs-0.6_dl*ay(31)+8._dl/15._dl*sigma)-adotoa/(1._dl+CP%alpha)*pis
+>         ayprime(EV%ste+2)=pisdot
+>         do l=3,EV%lmaxnr-1
+>            ayprime(l+EV%ste)=k*denl(l)*(l*ay(l+EV%ste-1) -(l+1)*ay(l+EV%ste+1))-adotoa/(1._dl+CP%alpha)*ay(l+EV%ste)
+>         end do
+>   !Truncate the sterile neutrino expansion
+>         ayprime(EV%lmaxnr+EV%ste)=k*ay(EV%lmaxnr+EV%ste-1)-(EV%lmaxnr+1)/tau*ay(EV%lmaxnr+EV%ste)-&
+>              adotoa/(1._dl+CP%alpha)*ay(EV%lmaxnr+EV%ste)
+>
+
+
+
+42.
+1519a1617,1618
+>              ! MODIFIED
+>              gpres = gpres + grhos_t/3.0
+
+
+
+43. added comment, arbitrary
+1815,1816c1914
+<
+<         rhopi=grhog_t*pig
+---
+>         rhopi=grhog_t*pig !+ grhog_t*Magnetic
