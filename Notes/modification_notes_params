@@ -1,0 +1,41 @@
+modifications to params.ini file
+camb_mod/params_test2.ini
+CAMB/params.ini
+
+******PARAMS******
+******diff camb_mod/params.ini camb_mod/params_test2.ini
+1.
+31a32,34
+> #parameters for phdm
+> alpha          = 0.01
+>
+
+
+2. also, changed omnuh2 to 0... correct?
+36c39,41
+< omch2          = 0.112
+---
+> #omch2          = 0.112
+> omch2          = 0.1244
+> omvh2          = 0.343
+
+
+3.Turned off polarization concern.....
+160c165
+< accurate_polarization   = T
+---
+> accurate_polarization   = F
+
+
+4. turn off accurate reionization concern.....
+163c168
+< accurate_reionization   = T
+---
+> accurate_reionization   = F
+
+
+5.turn this off too
+169c174
+< do_late_rad_truncation   = T
+---
+> do_late_rad_truncation   = F
