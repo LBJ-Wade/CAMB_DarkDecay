@@ -23,6 +23,7 @@
     !     E. Bertschinger.  See the LICENSE file of the COSMICS distribution
     !     for restrictions on the modification and distribution of this software.
 
+!MODIFICATIONS: July 2018: modifications for DDM and dark radiation
 
     module ModelParams
     use precision
@@ -35,7 +36,7 @@
     implicit none
     public
 
-    character(LEN=*), parameter :: version = 'Jan17'
+    character(LEN=*), parameter :: version = 'Sept17'
 
     integer :: FeedbackLevel = 0 !if >0 print out useful information about the model
 
@@ -61,7 +62,8 @@
     !Nu_best: automatically use mixture which is fastest and most accurate
 
     integer, parameter :: max_Nu = 5 !Maximum number of neutrino species
-    integer, parameter :: max_transfer_redshifts = 150
+!MODIFIED: change from 150 to 500
+    integer, parameter :: max_transfer_redshifts = 500
     integer, parameter :: fileio_unit = 13 !Any number not used elsewhere will do
     integer, parameter :: outNone=1
 
@@ -75,6 +77,7 @@
 
     type TransferParams
         logical     ::  high_precision
+        logical     ::  accurate_massive_neutrinos
         integer     ::  num_redshifts
         real(dl)    ::  kmax         !these are acutally q values, but same as k for flat
         integer     ::  k_per_logint ! ..
@@ -111,6 +114,8 @@
         !Max_l and Max_eta_k are set to the tensor variables if only tensors requested
 
         real(dl)  :: omegab, omegac, omegav, omegan
+! MODIFIED
+        real(dl)  :: omegas,alpha !added this
         !Omega baryon, CDM, Lambda and massive neutrino
         real(dl)  :: H0,TCMB,yhe,Num_Nu_massless
         integer   :: Num_Nu_massive !sum of Nu_mass_numbers below
@@ -175,6 +180,8 @@
     !     adotrad - a(tau) in radiation era
 
     real(dl) grhom,grhog,grhor,grhob,grhoc,grhov,grhornomass,grhok
+! MODIFIED
+    real(dl) grhos,io !added line
     real(dl) taurst,dtaurec,taurend, tau_maxvis,adotrad
 
     !Neutrinos
@@ -377,8 +384,13 @@
     grhob=grhom*CP%omegab
     grhov=grhom*CP%omegav
     grhok=grhom*CP%omegak
+! MODIFIED
+    grhos=grhom*CP%omegas !added
+    io=(3._dl+4._dl*CP%alpha)/(1._dl+CP%alpha) !added
     !  adotrad gives the relation a(tau) in the radiation era:
-    adotrad = sqrt((grhog+grhornomass+sum(grhormass(1:CP%Nu_mass_eigenstates)))/3)
+!MODIFIED
+    !adotrad = sqrt((grhog+grhornomass+sum(grhormass(1:CP%Nu_mass_eigenstates)))/3)
+    adotrad = sqrt((grhos+grhog+grhornomass+sum(grhormass(1:CP%Nu_mass_eigenstates)))/3)
 
 
     Nnow = CP%omegab*(1-CP%yhe)*grhom*c**2/kappa/m_H/Mpc**2
@@ -426,6 +438,8 @@
         write(*,'("Om_nu h^2            = ",f9.6)') CP%omegan*(CP%H0/100)**2
         write(*,'("Om_Lambda            = ",f9.6)') CP%omegav
         write(*,'("Om_K                 = ",f9.6)') CP%omegak
+!MODIFIED
+        write(*,'("Sterile neutrinos    = ",f9.6)') CP%omegas !added this line
         write(*,'("Om_m (1-Om_K-Om_L)   = ",f9.6)') 1-CP%omegak-CP%omegav
         write(*,'("100 theta (CosmoMC)  = ",f9.6)') 100*CosmomcTheta()
         if (CP%Num_Nu_Massive > 0) then
@@ -581,17 +595,20 @@
 
     subroutine AngularDiameterDistanceArr(arr, z, n)
     !This is the physical (non-comoving) angular diameter distance in Mpc for array of z
+    !z array must be monotonically increasing
     integer,intent(in) :: n
     real(dl), intent(out) :: arr(n)
     real(dl), intent(in) :: z(n)
     integer i
-    !dumb version that just calls each z in turn independently
 
-    !$OMP PARALLEL DO DEFAULT(SHARED),SCHEDULE(STATIC)
-    do i=1, n
-        arr(i) = AngularDiameterDistance(z(i))
-    end do
-    !$OMP END PARALLEL DO
+    call ComovingRadialDistanceArr(arr, z, n, 1e-4_dl)
+    if (CP%flat) then
+        arr = arr/(1+z)
+    else
+        do i=1, n
+            arr(i) =  CP%r/(1+z(i))*rofchi(arr(i)/CP%r)
+        end do
+    end if
 
     end subroutine AngularDiameterDistanceArr
 
@@ -620,6 +637,34 @@
     ComovingRadialDistance = DeltaTime(1/(1+z),1._dl)
 
     end function ComovingRadialDistance
+
+    subroutine ComovingRadialDistanceArr(arr, z, n, tol)
+    !z array must be monotonically increasing
+    integer, intent(in) :: n
+    real(dl), intent(out) :: arr(n)
+    real(dl), intent(in) :: z(n)
+    real(dl), intent(in) :: tol
+    integer i
+
+    !$OMP PARALLEL DO DEFAULT(SHARED),SCHEDULE(STATIC)
+    do i = 1, n
+        if (i==1) then
+            if (z(i) < 1e-6_dl) then
+                arr(i) = 0
+            else
+                arr(i) = DeltaTime(1/(1+z(i)),1._dl, tol)
+            end if
+        else
+            if (z(i) < z(i-1)) error stop 'ComovingRadialDistanceArr redshifts out of order'
+            arr(i) = DeltaTime(1/(1+z(i)),1/(1+z(i-1)),tol)
+        end if
+    end do
+    !$OMP END PARALLEL DO
+    do i = 2, n
+        arr(i) = arr(i)  + arr(i-1)
+    end do
+
+    end subroutine ComovingRadialDistanceArr
 
     function Hofz(z)
     !non-comoving Hubble in MPC units, divide by MPC_in_sec to get in SI units
@@ -1238,10 +1283,10 @@
         unit = open_file_header(ScalFile, 'L', C_name_tags(:last_C))
         do in=1,CP%InitPower%nn
             do il=lmin,min(10000,CP%Max_l)
-                write(unit,trim(numcat('(1I6,',last_C))//'E15.5)')il ,fact*Cl_scalar(il,in,C_Temp:last_C)
+                write(unit,trim(numcat('(1I6,',last_C))//'E15.6)')il ,fact*Cl_scalar(il,in,C_Temp:last_C)
             end do
             do il=10100,CP%Max_l, 100
-                write(unit,trim(numcat('(1E15.5,',last_C))//'E15.5)') real(il),&
+                write(unit,trim(numcat('(1E15.6,',last_C))//'E15.6)') real(il),&
                     fact*Cl_scalar(il,in,C_Temp:last_C)
             end do
         end do
@@ -1262,13 +1307,13 @@
                 outarr=Cl_scalar_array(il,in,1:3+num_redshiftwindows,1:3+num_redshiftwindows)
                 outarr(1:2,:)=sqrt(fact)*outarr(1:2,:)
                 outarr(:,1:2)=sqrt(fact)*outarr(:,1:2)
-                write(unit,trim(numcat('(1I6,',(3+num_redshiftwindows)**2))//'E15.5)') il, outarr
+                write(unit,trim(numcat('(1I6,',(3+num_redshiftwindows)**2))//'E15.6)') il, outarr
             end do
             do il=10100,CP%Max_l, 100
                 outarr=Cl_scalar_array(il,in,1:3+num_redshiftwindows,1:3+num_redshiftwindows)
                 outarr(1:2,:)=sqrt(fact)*outarr(1:2,:)
                 outarr(:,1:2)=sqrt(fact)*outarr(:,1:2)
-                write(unit,trim(numcat('(1E15.5,',(3+num_redshiftwindows)**2))//'E15.5)') real(il), outarr
+                write(unit,trim(numcat('(1E15.6,',(3+num_redshiftwindows)**2))//'E15.6)') real(il), outarr
             end do
         end do
         close(unit)
@@ -1279,7 +1324,7 @@
         unit = open_file_header(TensFile, 'L', CT_name_tags)
         do in=1,CP%InitPower%nn
             do il=lmin,CP%Max_l_tensor
-                write(unit,'(1I6,4E15.5)')il, fact*Cl_tensor(il, in, CT_Temp:CT_Cross)
+                write(unit,'(1I6,4E15.6)')il, fact*Cl_tensor(il, in, CT_Temp:CT_Cross)
             end do
         end do
         close(unit)
@@ -1289,11 +1334,11 @@
         unit = open_file_header(TotFile, 'L', CT_name_tags)
         do in=1,CP%InitPower%nn
             do il=lmin,CP%Max_l_tensor
-                write(unit,'(1I6,4E15.5)')il, fact*(Cl_scalar(il, in, C_Temp:C_E)+ Cl_tensor(il,in, C_Temp:C_E)), &
+                write(unit,'(1I6,4E15.6)')il, fact*(Cl_scalar(il, in, C_Temp:C_E)+ Cl_tensor(il,in, C_Temp:C_E)), &
                     fact*Cl_tensor(il,in, CT_B), fact*(Cl_scalar(il, in, C_Cross) + Cl_tensor(il, in, CT_Cross))
             end do
             do il=CP%Max_l_tensor+1,CP%Max_l
-                write(unit,'(1I6,4E15.5)')il ,fact*Cl_scalar(il,in,C_Temp:C_E), 0._dl, fact*Cl_scalar(il,in,C_Cross)
+                write(unit,'(1I6,4E15.6)')il ,fact*Cl_scalar(il,in,C_Temp:C_E), 0._dl, fact*Cl_scalar(il,in,C_Cross)
             end do
         end do
         close(unit)
@@ -1303,7 +1348,7 @@
         unit = open_file_header(LensFile, 'L', CT_name_tags)
         do in=1,CP%InitPower%nn
             do il=lmin, lmax_lensed
-                write(unit,'(1I6,4E15.5)')il, fact*Cl_lensed(il, in, CT_Temp:CT_Cross)
+                write(unit,'(1I6,4E15.6)')il, fact*Cl_lensed(il, in, CT_Temp:CT_Cross)
             end do
         end do
         close(unit)
@@ -1314,10 +1359,10 @@
         unit = open_file_header(LensTotFile, 'L', CT_name_tags)
         do in=1,CP%InitPower%nn
             do il=lmin,min(CP%Max_l_tensor,lmax_lensed)
-                write(unit,'(1I6,4E15.5)')il, fact*(Cl_lensed(il, in, CT_Temp:CT_Cross)+ Cl_tensor(il,in, CT_Temp:CT_Cross))
+                write(unit,'(1I6,4E15.6)')il, fact*(Cl_lensed(il, in, CT_Temp:CT_Cross)+ Cl_tensor(il,in, CT_Temp:CT_Cross))
             end do
             do il=min(CP%Max_l_tensor,lmax_lensed)+1,lmax_lensed
-                write(unit,'(1I6,4E15.5)')il, fact*Cl_lensed(il, in, CT_Temp:CT_Cross)
+                write(unit,'(1I6,4E15.6)')il, fact*Cl_lensed(il, in, CT_Temp:CT_Cross)
             end do
         end do
         close(unit)
@@ -1362,12 +1407,12 @@
                 end if
                 scale = (real(il+1)/il)**2/OutputDenominator !Factor to go from old l^4 factor to new
 
-                write(unit,'(1I6,7E15.5)') il , fact*TT, fact*EE, fact*BB, fact*TE, scale*Cl_scalar(il,in,C_Phi),&
+                write(unit,'(1I6,7E15.6)') il , fact*TT, fact*EE, fact*BB, fact*TE, scale*Cl_scalar(il,in,C_Phi),&
                     (real(il+1)/il)**1.5/OutputDenominator*sqrt(fact)*Cl_scalar(il,in,C_PhiTemp:C_PhiE)
             end do
             do il=10100,CP%Max_l, 100
                 scale = (real(il+1)/il)**2/OutputDenominator
-                write(unit,'(1E15.5,7E15.5)') real(il), fact*Cl_scalar(il,in,C_Temp:C_E),0.,fact*Cl_scalar(il,in,C_Cross), &
+                write(unit,'(1E15.6,7E15.6)') real(il), fact*Cl_scalar(il,in,C_Temp:C_E),0.,fact*Cl_scalar(il,in,C_Cross), &
                     scale*Cl_scalar(il,in,C_Phi),&
                     (real(il+1)/il)**1.5/OutputDenominator*sqrt(fact)*Cl_scalar(il,in,C_PhiTemp:C_PhiE)
             end do
@@ -1396,7 +1441,7 @@
         unit =  open_file_header(VecFile, 'L', CT_name_tags)
         do in=1,CP%InitPower%nn
             do il=lmin,CP%Max_l
-                write(unit,'(1I6,4E15.5)')il, fact*Cl_vector(il, in, CT_Temp:CT_Cross)
+                write(unit,'(1I6,4E15.6)')il, fact*Cl_vector(il, in, CT_Temp:CT_Cross)
             end do
         end do
         close(unit)
@@ -1738,13 +1783,23 @@
     use Errors
     implicit none
     public
+!MODIFIED
     integer, parameter :: Transfer_kh =1, Transfer_cdm=2,Transfer_b=3,Transfer_g=4, &
         Transfer_r=5, Transfer_nu = 6,  & !massless and massive neutrino
-    Transfer_tot=7, Transfer_nonu=8, Transfer_tot_de=9,  &
+!    Transfer_tot=7, Transfer_nonu=8, Transfer_tot_de=9,  &
+!        ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
+!        Transfer_Weyl = 10, & ! the Weyl potential, for lensing and ISW
+!    Transfer_Newt_vel_cdm=11, Transfer_Newt_vel_baryon=12,   & ! -k v_Newtonian/H
+!    Transfer_vel_baryon_cdm = 13 !relative velocity of baryons and CDM
+
+    Transfer_s=7,
+    Transfer_tot=8, Transfer_nonu=9, Transfer_tot_de=10,  &
         ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
-        Transfer_Weyl = 10, & ! the Weyl potential, for lensing and ISW
-    Transfer_Newt_vel_cdm=11, Transfer_Newt_vel_baryon=12,   & ! -k v_Newtonian/H
-    Transfer_vel_baryon_cdm = 13 !relative velocity of baryons and CDM
+        Transfer_Weyl = 11, & ! the Weyl potential, for lensing and ISW
+    Transfer_Newt_vel_cdm=12, Transfer_Newt_vel_baryon=13,   & ! -k v_Newtonian/H
+    Transfer_vel_baryon_cdm = 14 !relative velocity of baryons and CDM
+!Added Transfer_s, increased following Transfer_ by 1
+!Does this make sense?
 
     integer, parameter :: Transfer_max = Transfer_vel_baryon_cdm
     character(LEN=name_tag_len) :: Transfer_name_tags(Transfer_max-1) = &
@@ -2488,7 +2543,7 @@
                 columns = ['P   ', 'P_vd','P_vv']
                 unit = open_file_header(FileNames(itf), 'k/h', columns(:ncol), 15)
                 do i=1,points
-                    write (unit, '(*(E15.5))') MTrans%TransferData(Transfer_kh,i,1),outpower(i,1:CP%InitPower%nn,:)
+                    write (unit, '(*(E15.6))') MTrans%TransferData(Transfer_kh,i,1),outpower(i,1:CP%InitPower%nn,:)
                 end do
                 close(unit)
             else
@@ -2505,7 +2560,7 @@
                 unit = open_file_header(FileNames(itf), 'k/h', columns(:1), 15)
 
                 do i=1,points
-                    write (unit, '(*(E15.5))') minkh*exp((i-1)*dlnkh),outpower(i,1:CP%InitPower%nn,1)
+                    write (unit, '(*(E15.6))') minkh*exp((i-1)*dlnkh),outpower(i,1:CP%InitPower%nn,1)
                 end do
                 close(unit)
             end if
@@ -2632,7 +2687,6 @@
     end if
     end subroutine thermo
 
-
     function Thermo_OpacityToTime(opacity)
     real(dl), intent(in) :: opacity
     integer j
@@ -2663,7 +2717,7 @@
     real(dl) xe0,tau,a,a2
     real(dl) adot,tg0,ahalf,adothalf,fe,thomc,thomc0,etc,a2t
     real(dl) dtbdla,vfi,cf1,maxvis, vis
-    integer ncount,i,j1,j2,iv,ns
+    integer ncount,i,j1,iv,ns
     real(dl) spline_data(nthermo)
     real(dl) last_dotmu
     real(dl) dtauda  !diff of tau w.CP%r.t a and integration
@@ -3155,13 +3209,15 @@
     subroutine GetBackgroundEvolution(ntimes, times, outputs)
     integer, intent(in) :: ntimes
     real(dl), intent(in) :: times(ntimes)
-    real(dl) :: outputs(4, ntimes)
-    real(dl) spline_data(nthermo), ddxe(nthermo)
-    real(dl) :: d, tau, cs2b, opacity, vis
+    real(dl) :: outputs(5, ntimes)
+    real(dl) spline_data(nthermo), ddxe(nthermo), ddTb(nthermo)
+    real(dl) :: d, tau, cs2b, opacity, vis, Tbaryon
     integer i, ix
 
     call splini(spline_data,nthermo)
     call splder(xe,ddxe,nthermo,spline_data)
+    call splder(Tb,ddTb,nthermo,spline_data)
+
     outputs = 0
     do ix = 1, ntimes
         tau = times(ix)
@@ -3178,15 +3234,19 @@
             vis=emmu(i)+d*(demmu(i)+d*(3._dl*(emmu(i+1)-emmu(i)) &
                 -2._dl*demmu(i)-demmu(i+1)+d*(demmu(i)+demmu(i+1) &
                 +2._dl*(emmu(i)-emmu(i+1)))))
-
+            Tbaryon = tb(i)+d*(ddtb(i)+d*(3._dl*(tb(i+1)-tb(i)) &
+                -2._dl*ddtb(i)-ddtb(i+1)+d*(ddtb(i)+ddtb(i+1) &
+                +2._dl*(tb(i)-tb(i+1)))))
         else
             outputs(1,ix)=xe(nthermo)
             vis = emmu(nthermo)
+            Tbaryon = Tb(nthermo)
         end if
 
         outputs(2, ix) = opacity
         outputs(3, ix) = opacity*vis
         outputs(4, ix) = cs2b
+        outputs(5, ix) = Tbaryon
     end do
 
     end subroutine GetBackgroundEvolution
