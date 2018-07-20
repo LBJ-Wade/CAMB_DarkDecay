@@ -1,0 +1,324 @@
+notes on modifications to cmbmain.f90
+
+1. version change
+6c6
+< !     This version Feb 2009
+---
+> !     This version September 2008
+
+
+2. comment changed, arbitrary
+34c34
+< !     of a Friedmann-Robertson-Walker universe with a supplied system of gauge-dependent
+---
+> !     of a Friedmann-Robertson-Walker universe with a supplied system of gauge-dependent equation
+
+
+
+3. arbitrary
+156c156
+<
+---
+>
+
+
+
+4. arbitrary
+176d175
+<
+
+
+5. arbitrary
+198d196
+<
+
+
+6. arbitrary
+243a242
+>
+
+
+7. arbitrary
+253,254c252
+<
+<
+---
+>
+
+
+8. arbitrary
+255a254
+>
+
+
+9. arbitrary
+268,269c267
+<
+<
+---
+>
+
+
+10. arbitrary
+277a276
+>
+
+
+11. arbitrary
+293a293
+>
+
+
+12.
+498a499,501
+>              ! MODIFIED
+>             taustart=taustart/100.0
+>
+
+
+13. arbitrary
+499a503
+>
+
+
+14. arbitrary
+565d568
+<
+
+
+15. not noticing any difference...?
+569c572
+<       qmin=qmin0/CP%tau0/AccuracyBoost
+---
+>       qmin=qmin0/CP%tau0/AccuracyBoost
+
+
+16. arbitrary
+596a600
+>
+
+
+17. arbitrary
+603d606
+<
+
+
+18. arbitrary
+605d607
+<
+
+
+19. arbitrary
+637a640
+>
+
+
+20. arbitrary
+673d675
+<
+
+
+21. changed, but commented out...
+712c714
+< !EV%q=0.2
+---
+> !EV%q=1
+
+
+
+22. aribtrary
+725,726c727,728
+< !           tol1=tol/exp(AccuracyBoost-1)
+<
+---
+> !          tol1=tol/exp(AccuracyBoost-1)
+> !
+
+
+
+23. addition, but commented out...
+728a731
+> !          !tauend = 1/EV%q*1.01
+
+
+24. changed, but commented out...
+730,731c733,734
+<
+< !          write (*,'(4E15.5)') 1/y(1)-1, y(3), y(EV%w_ix) ,y(EV%w_ix+1)
+---
+> !
+> !          write (*,'(5E15.5)') tauend,1/y(1)-1, y(3),y(4), y(5)!y(EV%w_ix) ,y(EV%w_ix+1)
+
+
+
+25. already updated
+1032,1033c1035,1037
+<
+<        IntSampleBoost=AccuracyBoost
+---
+>        IntSampleBoost=AccuracyBoost
+>        if (do_bispectrum) IntSampleBoost = IntSampleBoost * 2
+>        if (hard_bispectrum) IntSampleBoost = IntSampleBoost * 2
+
+
+26. already updated
+1064a1069,1071
+>
+>          !if (hard_bispectrum)
+>          if (do_bispectrum) k_max_0 = max(10.d0,k_max_0)
+
+
+27. arbitrary
+1281d1287
+<
+
+
+28. already modified in slightly different way
+1287,1288c1293,1299
+<              xlmax1=80*lSamp%l(j)*AccuracyBoost
+<              tmin=CP%tau0-xlmax1/IV%q
+---
+>              if (full_bessel_integration) then
+>                  tmin = TimeSteps%points(2)
+>              else
+>                  xlmax1=80*lSamp%l(j)*AccuracyBoost
+>                  tmin=CP%tau0-xlmax1/IV%q
+>                  tmin=max(TimeSteps%points(2),tmin)
+>              end if
+
+
+
+29. related to above change (do nothing)
+1291,1292c1302
+<              tmin=max(TimeSteps%points(2),tmin)
+<
+---
+>
+
+
+30. arbitrary
+1307a1318
+>
+
+
+31. arbitrary
+1452a1464
+>
+
+
+32. added comment....
+1453a1466
+> !       if (xf > TimeSteps%Lowest .and. xf > TimeSteps%Highest) then
+
+
+33. added comment...
+1948a1962
+> !        use SeparableBispectrum
+
+
+34. arbitrary
+1956a1971
+>
+
+
+35. comment modification..... arbitrary
+2017c2032
+<                      !We put pix extra factors of %l here to improve interpolation in CTrans%ls%l
+---
+>                      !We put pix extra factors of l here to improve interpolation in CTrans%ls%l
+
+
+36. comment added, arbitrary
+2027a2043,2044
+> !         call GetReducedSeparableBispectrum(CTrans, iCl_scalar(1,C_temp,1))
+>
+
+
+37.
+2029a2047,2132
+>         subroutine CalcScalCls2(CTrans)
+>         !Calculate C_ll' for non-isotropic models
+>         !Run with l_sample_boost=50 to get every l
+>         !not used in normal CAMB
+>         implicit none
+>         Type(ClTransferData) :: CTrans
+>         integer j,j2,in
+>         real(dl) apowers, pows(CTrans%q%npoints)
+>         integer q_ix
+>         real(dl)  ks(CTrans%q%npoints),dlnks(CTrans%q%npoints),dlnk
+>         real(dl) ctnorm,dbletmp
+>         real(dl), allocatable :: iCl_Scalar2(:,:,:,:)
+>
+>          allocate(iCl_Scalar2(CTranS%ls%l0,CTrans%ls%l0,C_Temp:C_last,CP%InitPower%nn))
+>          iCl_scalar2 = 0
+>
+>          do in=1,CP%InitPower%nn
+>           do q_ix = 1, CTrans%q%npoints
+>
+>              if (CP%flat) then
+>                      ks(q_ix) = CTrans%q%points(q_ix)
+>                      dlnks(q_ix) = CTrans%q%dpoints(q_ix)/CTrans%q%points(q_ix)
+>              else
+>                      ks(q_ix) = sqrt(CTrans%q%points(q_ix)**2 - CP%curv)
+>                      dlnks(q_ix) = CTrans%q%dpoints(q_ix)*CTrans%q%points(q_ix)/ks(q_ix)**2
+>              end if
+>
+>              pows(q_ix) =  ScalarPower(ks(q_ix) ,in)
+>
+>           end do
+>
+>          do j=1,CTrans%ls%l0
+>           do j2=1,CTrans%ls%l0
+>
+>         !Integrate dk/k Delta_l_q**2 * Power(k)
+>
+>           do q_ix = 1, CTrans%q%npoints
+>
+>              if (.not.(CP%closed.and.nint(CTrans%q%points(q_ix)*CP%r)<= CTrans%ls%l(j))) then
+>                !cut off at nu = l + 1
+>              dlnk = dlnks(q_ix)
+>              apowers = pows(q_ix)
+>
+>              iCl_scalar2(j,j2,C_Temp:C_E,in) = iCl_scalar2(j,j2,C_Temp:C_E,in) +  &
+>                           apowers*CTrans%Delta_p_l_k(1:2,j,q_ix)*CTrans%Delta_p_l_k(1:2,j2,q_ix)*dlnk
+>              iCl_scalar2(j,j2,C_Cross,in) = iCl_scalar2(j,j2,C_Cross,in) + &
+>                           apowers*CTrans%Delta_p_l_k(1,j,q_ix)*CTrans%Delta_p_l_k(2,j2,q_ix)*dlnk
+>
+>              end if
+>
+>            end do
+>
+> !Output l(l+1)C_l/OutputDenominator
+>
+>            !ctnorm = (CTrans%ls%l+2)!/(CTrans%ls%l-2)! - beware of int overflow
+>             ctnorm=(CTrans%ls%l(j)*CTrans%ls%l(j)-1)*real((CTrans%ls%l(j)+2)*CTrans%ls%l(j),dl)
+>             ctnorm=sqrt(ctnorm*(CTrans%ls%l(j2)*CTrans%ls%l(j2)-1)*real((CTrans%ls%l(j2)+2)*CTrans%ls%l(j2),dl))
+>
+>             dbletmp=(CTrans%ls%l(j)*(CTrans%ls%l(j)+1))/OutputDenominator*fourpi
+>             dbletmp=sqrt(dbletmp*(CTrans%ls%l(j2)*(CTrans%ls%l(j2)+1))/OutputDenominator*fourpi  )
+>
+>             iCl_scalar2(j,j2,C_Temp,in)  =  iCl_scalar2(j,j2,C_Temp,in)*dbletmp
+>             iCl_scalar2(j,j2,C_E,in)     =  iCl_scalar2(j,j2,C_E,in)*dbletmp*ctnorm
+>             iCl_scalar2(j,j2,C_Cross,in) =  iCl_scalar2(j,j2,C_Cross,in)*dbletmp*sqrt(ctnorm)
+>
+>            end do
+>
+>           end do
+>
+>         end do
+>
+>         call CreateTxtFile('z:\cl2.dat',1)
+>         do j=1,CTrans%ls%l0
+>         do j2=1,CTrans%ls%l0
+>          write (1,*) CTrans%ls%l(j),CTrans%ls%l(j2),iCl_scalar2(j,j2,1,1)*7.4311e12
+>         end do
+>         end do
+>         close(1)
+>         call CreateTxtFile('cl1l2.dat',1)
+>         do j=1,999
+>          write (1,'(999E15.5)') iCl_scalar2(j,1:999,1,1)*7.4311e12
+>         end do
+>         stop
+>
+>         end subroutine CalcScalCls2
+>
