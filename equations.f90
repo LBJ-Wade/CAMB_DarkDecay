@@ -1835,7 +1835,7 @@
 
 
 !MODIFIED
-    real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot
+    real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot !new variables
 
     k=EV%k_buf
     k2=EV%k2_buf
@@ -1853,9 +1853,8 @@
     clxs=ay(EV%ste)
     qs=ay(EV%ste+1)
     pis=ay(EV%ste+2)
-!does this addition go here? also, change from yprime to ayprime; section formerly in subroutine output....
-    qsdot = ayprime(EV%ste+1)
-    pisdot = ayprime(EV%ste+2)
+    qsdot = ayprime(EV%ste+1) !placement?
+    pisdot = ayprime(EV%ste+2) !placement?
 
 !clxs = 0.01
 !write(1,'(10E15.5)') k,a,clxs,clxc
@@ -2266,8 +2265,7 @@
         dgpi_diff = 0  !sum (3*p_nu -rho_nu)*pi_nu
         pidot_sum = grhog_t*pigdot + grhor_t*pirdot
 ! MODIFIED
-      !pidot_sum = pidot_sum + grhos_t*pisdot !original modification
-      pidot_sum = grhos_t*pisdot !modified modification to match current....??, no initialization....
+      pidot_sum = pidot_sum + grhos_t*pisdot !add dark radiation componenet
 
         clxnu =0
         if (CP%Num_Nu_Massive /= 0) then
@@ -2276,6 +2274,9 @@
         end if
         diff_rhopi = pidot_sum - (4*dgpi+ dgpi_diff)*adotoa
         gpres=gpres_nu+ (grhog_t+grhor_t)/3 +grhov_t*w_lam
+!MODIFIED
+!right placement?
+        gpres=gpres + grhos_t/3.0 !add dark radiation component
 
         phi = -((dgrho +3*dgq*adotoa/k)/EV%Kf(1) + dgpi)/(2*k2)
 
@@ -2421,10 +2422,7 @@
 
     grho=grhob_t+grhoc_t+grhor_t+grhog_t+grhov_t
     gpres=(grhog_t+grhor_t)/3._dl+grhov_t*w_lam
-
-! MODIFIED
-    grho = grho + grhos_t
-    gpres = gpres + grhos_t/3.0
+!don't update grho and gpres in derivsv? skip for now anyways?
 
     adotoa=sqrt(grho/3._dl)
     adotdota=(adotoa*adotoa-gpres)/2
