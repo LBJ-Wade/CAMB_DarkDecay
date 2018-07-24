@@ -873,7 +873,6 @@
 
 
 ! MODIFIED
-!Code different here--is this in right place?
     EV%ste=EV%nvar+1
     !EV%nvar=EV%nvar+2*EV%lmaxnr+1
     EV%nvar=EV%nvar+EV%lmaxnr+1
@@ -1244,6 +1243,7 @@
     call derivs(EV,EV%ScalEqsToPropagate,tau,y,yprime)
     nullify(EV%OutputSources, EV%CustomSources)
 
+
     end subroutine output
 
 
@@ -1411,8 +1411,9 @@
     !integer, parameter :: i_max = i_vde
 
     integer, parameter :: i_clxg=1,i_clxr=2,i_clxc=3, i_clxb=4, &
-         i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vde=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17  !Changed i_vq to i_vde as well...??
+         i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vde=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17
     integer, parameter :: i_max = i_pis
+    !Note: i_vde formerly i_vq
 !mod ends
     real(dl) initv(6,1:i_max), initvec(1:i_max)
 
@@ -1852,6 +1853,9 @@
     clxs=ay(EV%ste)
     qs=ay(EV%ste+1)
     pis=ay(EV%ste+2)
+!does this addition go here? also, change from yprime to ayprime; section formerly in subroutine output....
+    qsdot = ayprime(EV%ste+1)
+    pisdot = ayprime(EV%ste+2)
 
 !clxs = 0.01
 !write(1,'(10E15.5)') k,a,clxs,clxc
@@ -1859,14 +1863,6 @@
     !  Baryon variables
     clxb=ay(4)
     vb=ay(5)
-
-!MODIFIED
-!note changes to ay from y as well
-    clxs = ay(EV%ste)
-    qs = ay(EV%ste+1)
-    qsdot = ayprime(EV%ste+1)
-    pis = ay(EV%ste+2)
-    pisdot = ayprime(EV%ste+2)
 
     !  Compute expansion rate from: grho 8*pi*rho*a**2
 
@@ -1899,22 +1895,14 @@
     !  8*pi*a*a*SUM[(rho_i+p_i)*v_i]
     dgq=grhob_t*vb
 
-! MODIFIED
-    !dgrho_matter = dgrho + grhos_t*clxs !!is it correct to change to dgrho_matter? from dgrho?????
-    dgrho = dgrho_matter + dgrho_t*clxs !is this correct>
-    dgq = dgq + grhos_t*qs !modified...???
-    !OR DOES THIS MODIFICATION GO HERE???
-    !dgrho = dgrho+clxc*grhoc*a**(2-io) + clxb*grhob/a + clxs*grhos*a**(2-io)
-    !grho =  grho+grhoc*a**(2-io)+grhob/a
-
     if (CP%Num_Nu_Massive > 0) then
         call MassiveNuVars(EV,ay,a,grhonu_t,gpres_nu,dgrho_matter,dgq, wnu_arr)
     end if
 
-    grho_matter=grhonu_t+grhob_t+grhoc_t
+    grho_matter=grhonu_t+grhob_t+grhoc_t !massive neutrinos + baryons + cdm
+    grho = grho_matter+grhor_t+grhog_t+grhov_t
 !MODIFIED
-    !grho = grho_matter+grhor_t+grhog_t+grhov_t
-    grho = grho_matter+grhor_t+grhog_t+grhov_t+grhos_t !added
+    grho = grho + grhos_t !add dark radiation component
 
     if (CP%flat) then
         adotoa=sqrt(grho/3)
@@ -1967,10 +1955,14 @@
     end if
 
     !  8*pi*a*a*SUM[rho_i*clx_i] - radiation terms
-    dgrho=dgrho + grhog_t*clxg+grhor_t*clxr
+    dgrho=dgrho + grhog_t*clxg+grhor_t*clxr !matter + photons + neutrinos
+!MODIFIED
+    dgrho = dgrho + grhos_t*clxs !add dark radiation component
 
     !  8*pi*a*a*SUM[(rho_i+p_i)*v_i]
     dgq=dgq + grhog_t*qg+grhor_t*qr
+!MODIFIED
+    dqg = dgq + grhos_t*qs !add dark radiation component
 
     !  Photon mass density over baryon mass density
     photbar=grhog_t/grhob_t
