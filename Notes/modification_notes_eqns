@@ -404,3 +404,32 @@ differences: (1) is CAMB-Feb09, (2) is modified camb
 <         rhopi=grhog_t*pig
 ---
 >         rhopi=grhog_t*pig !+ grhog_t*Magnetic
+
+
+
+_____________________________
+NOTES on matching old modifications to new/restructured version of camb:
+
+MODIFICATIONS to fderivs (2009 CAMB):
+Added variables: real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot
+Line 1468: added clxs, qs, pis to CDM variables
+Line 1483: changed grhoc_t, added grhos_t, ....
+Line 1524: modified grho to include grhos_t
+Line 1537: additions to dgrho and dgq
+Line 1579: modified CDM equation of motion
+Line 1617: modified gpres
+
+MODIFICATIONS to output (2009 CAMB): {MODIFICATIONS I MADE TO 2018 CAMB}
+676: added variables real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot {DONE in derivs}
+699: assigned clxs, qs, qsdot, pis, pisdot {DONE in derivs}
+709: modified grhoc_t, added grhos_t {DONE in derivs}
+747: added to grho, gpres {DONE in derivs, placement of gpres?}
+759: modified dgrho, dgq, dgpi {DONE in derivs}
+806: modified pidot_sum {DONE in derivs}
+(874 output subroutine ends)
+
+-subroutine derivs 2167-
+-subroutine fderivs 1424-1790-
+-subroutine fderivsv 1933-2163-
+-subroutine output 653-874-
+{subroutine derivs 1799-2368}
