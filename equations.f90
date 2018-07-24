@@ -2282,13 +2282,13 @@
 
         if (associated(EV%OutputTransfer)) then
 
-!!!None of these divided by k2, differing from 2009..did other things change accordingly?
             EV%OutputTransfer(Transfer_kh) = k/(CP%h0/100._dl)
             EV%OutputTransfer(Transfer_cdm) = clxc
             EV%OutputTransfer(Transfer_b) = clxb
             EV%OutputTransfer(Transfer_g) = clxg
             EV%OutputTransfer(Transfer_r) = clxr
 !MODIFIED
+!Note: no longer dividing by k2, adjusted accordingly
             EV%OutputTransfer(Transfer_s) = clxs !added this
             EV%OutputTransfer(Transfer_nu) = clxnu
             EV%OutputTransfer(Transfer_tot) =  dgrho_matter/grho_matter !includes neutrinos
