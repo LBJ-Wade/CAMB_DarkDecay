@@ -1792,7 +1792,7 @@
 !    Transfer_Newt_vel_cdm=11, Transfer_Newt_vel_baryon=12,   & ! -k v_Newtonian/H
 !    Transfer_vel_baryon_cdm = 13 !relative velocity of baryons and CDM
 
-    Transfer_s=7,
+    Transfer_s=7, &
     Transfer_tot=8, Transfer_nonu=9, Transfer_tot_de=10,  &
         ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
         Transfer_Weyl = 11, & ! the Weyl potential, for lensing and ISW
@@ -1802,15 +1802,16 @@
 !Does this make sense?
 
     integer, parameter :: Transfer_max = Transfer_vel_baryon_cdm
+!MODIFIED: inserted 's  ' between mass_nu and total
     character(LEN=name_tag_len) :: Transfer_name_tags(Transfer_max-1) = &
-        ['CDM     ', 'baryon  ', 'photon  ', 'nu      ', 'mass_nu ', 'total   ', &
+        ['CDM     ', 'baryon  ', 'photon  ', 'nu      ', 'mass_nu ', 's       ', 'total   ', &
         'no_nu   ', 'total_de', 'Weyl    ', 'v_CDM   ', 'v_b     ', 'v_b-v_c ']
 
     logical :: transfer_interp_matterpower  = .true. !output regular grid in log k
     !set to false to output calculated values for later interpolation
 
     integer :: transfer_power_var = Transfer_tot
-    !What to use to calulcate the output matter power spectrum and sigma_8
+    !What to use to calculate the output matter power spectrum and sigma_8
     !Transfer_tot uses total matter perturbation
 
     logical :: get_growth_sigma8 = .true.

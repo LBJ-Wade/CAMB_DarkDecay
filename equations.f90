@@ -1411,9 +1411,9 @@
     !integer, parameter :: i_max = i_vde
 
     integer, parameter :: i_clxg=1,i_clxr=2,i_clxc=3, i_clxb=4, &
-         i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxq=11,i_vde=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17
+         i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxde=11,i_vde=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17
     integer, parameter :: i_max = i_pis
-    !Note: i_vde formerly i_vq
+    !Note: i_vde formerly i_vq, which was changed to i_pis for modification
 !mod ends
     real(dl) initv(6,1:i_max), initvec(1:i_max)
 
@@ -1961,7 +1961,7 @@
     !  8*pi*a*a*SUM[(rho_i+p_i)*v_i]
     dgq=dgq + grhog_t*qg+grhor_t*qr
 !MODIFIED
-    dqg = dgq + grhos_t*qs !add dark radiation component
+    dgq = dgq + grhos_t*qs !add dark radiation component
 
     !  Photon mass density over baryon mass density
     photbar=grhog_t/grhob_t
