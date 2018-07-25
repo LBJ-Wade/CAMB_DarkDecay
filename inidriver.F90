@@ -3,6 +3,10 @@
     !     See readme.html for documentation. This is a sample driver routine that reads
     !     in one set of parameters and produdes the corresponding output.
 
+!MODIFIED JULY 2018 | Emma
+
+
+
     program driver
     use IniFile
     use CAMB
@@ -103,6 +107,8 @@
     call DarkEnergy_ReadParams(DefIni)
 
     P%h0     = Ini_Read_Double('hubble')
+!MODIFIED: include alpha
+    P%alpha = Ini_Read_Double('alpha')
 
     if (Ini_Read_Logical('use_physical',.false.)) then
         P%omegab = Ini_Read_Double('ombh2')/(P%H0/100)**2
@@ -150,12 +156,17 @@
     !JD 08/13 begin changes for nonlinear lensing of CMB + LSS compatibility
     !P%Transfer%redshifts -> P%Transfer%PK_redshifts and P%Transfer%num_redshifts -> P%Transfer%PK_num_redshifts
     !in the P%WantTransfer loop.
-    if (((P%NonLinear==NonLinear_lens .or. P%NonLinear==NonLinear_both) .and. P%DoLensing) &
-        .or. P%PK_WantTransfer) then
-    P%Transfer%high_precision=  Ini_Read_Logical('transfer_high_precision',.false.)
+    if (((P%NonLinear==NonLinear_lens .or. P%NonLinear==NonLinear_both) .and. P%DoLensing) .or. P%PK_WantTransfer) then
+        P%Transfer%high_precision=  Ini_Read_Logical('transfer_high_precision',.false.)
     else
         P%transfer%high_precision = .false.
     endif
+    if (P%PK_WantTransfer) then
+        P%Transfer%accurate_massive_neutrinos = Ini_Read_Logical('accurate_massive_neutrino_transfers',.false.)
+    else
+        P%Transfer%accurate_massive_neutrinos = .false.
+    end if
+
     if (P%NonLinear/=NonLinear_none) call NonLinear_ReadParams(DefIni)
 
     if (P%PK_WantTransfer)  then
