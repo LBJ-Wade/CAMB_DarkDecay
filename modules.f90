@@ -442,6 +442,7 @@
         write(*,'("Sterile neutrinos    = ",f9.6)') CP%omegas !added this line
         write(*,'("Om_m (1-Om_K-Om_L)   = ",f9.6)') 1-CP%omegak-CP%omegav
         write(*,'("100 theta (CosmoMC)  = ",f9.6)') 100*CosmomcTheta()
+        write(*,'("alpha                = ",f9.6)') CP%alpha !added this line July 25
         if (CP%Num_Nu_Massive > 0) then
             write(*,'("N_eff (total)        = ",f9.6)') nu_massless_degeneracy + &
                 sum(CP%Nu_mass_degeneracies(1:CP%Nu_mass_eigenstates))
