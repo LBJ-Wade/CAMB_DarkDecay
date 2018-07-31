@@ -58,7 +58,7 @@
 !   GetOmegak = 1 - (CP%omegab+CP%omegac+CP%omegav+CP%omegan)
 !MODIFIED
     GetOmegak = 1 - (CP%omegab+CP%omegac+CP%omegav+CP%omegan+CP%omegas)
-
+!!!!!!!!!!!
 
     end function GetOmegak
 
@@ -89,6 +89,7 @@
 !   grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
 !MODIFIED
     grhoa2=grhok*a2+grhob*a+grhog+grhornomass+(grhoc+grhos)*a**(4-io)
+!!!!!!!!!!!!!!!!!
     if (w_lam == -1._dl) then
         grhoa2=grhoa2+grhov*a2**2
     else
@@ -138,7 +139,7 @@
     real(dl) :: vec_sig0 = 1._dl
     !Vector mode shear
     integer, parameter :: max_l_evolve = 256 !Maximum l we are ever likely to propagate
-    !Note higher values increase size of Evolution vars, hence memoryWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+    !Note higher values increase size of Evolution vars, hence memory
 
     !Supported scalar initial condition flags
     integer, parameter :: initial_adiabatic=1, initial_iso_CDM=2, &
@@ -151,7 +152,7 @@
 
 
 ! MODIFIED
-        integer ste
+        integer ste !additional parameter
 
         integer w_ix !Index of two quintessence equations
         integer r_ix !Index of the massless neutrino hierarchy
@@ -214,28 +215,56 @@
         integer E_ix, B_ix !tensor polarizatisdon indices
         real(dl) denlkt(4,max_l_evolve),Kft(max_l_evolve)
         real, pointer :: OutputTransfer(:) => null()
+
+!!!!!!!!!
         real(dl), pointer :: OutputSources(:) => null()
         real(dl), pointer :: CustomSources(:) => null()
+!!!!!!!new to 2017 version
 
     end type EvolutionVars
 
+!MODIFIED [July 30]
     ABSTRACT INTERFACE
+!    SUBROUTINE TSource_func(sources, tau, a, adotoa, grho, gpres,w_lam, cs2_lam,  &
+!        grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+!        k,etak, etakdot, phi, phidot, sigma, sigmadot, &
+!        dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, delta_p_b, &
+!        dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
+!        dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+!        polter, polterdot, polterddot, octg, octgdot, E, Edot, &
+!        opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
+!        tau0, tau_maxvis, Kf, f_K)
     SUBROUTINE TSource_func(sources, tau, a, adotoa, grho, gpres,w_lam, cs2_lam,  &
         grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+        grhos_t, & !ADDED
         k,etak, etakdot, phi, phidot, sigma, sigmadot, &
-        dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, delta_p_b, &
-        dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
-        dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+        dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, clxs, delta_p_b, & !ADDED clxs
+        dgq, qg, qr, qde, vb, &
+        qs, & !ADDED
+        qgdot, qrdot, vbdot, qsdot, & !ADDED qsdot
+        dgpi, pig, pir, pis, pigdot, pirdot, pisdot, & !ADDED pis and pisdot
+        diff_rhopi, &
         polter, polterdot, polterddot, octg, octgdot, E, Edot, &
         opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
         tau0, tau_maxvis, Kf, f_K)
     real*8, intent(out) :: sources(:)
+!    real*8, intent(in) :: tau, a, adotoa, grho, gpres,w_lam, cs2_lam,  &
+!        grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+!        k,etak, etakdot, phi, phidot, sigma, sigmadot, &
+!        dgrho, clxg,clxb,clxc, clxr, clxnu, clxde, delta_p_b, &
+!        dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
+!        dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+!        polter, polterdot, polterddot, octg, octgdot, E(2:3), Edot(2:3), &
+!        opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
+!        tau0, tau_maxvis
     real*8, intent(in) :: tau, a, adotoa, grho, gpres,w_lam, cs2_lam,  &
         grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+        grhos_t, & !ADDED
         k,etak, etakdot, phi, phidot, sigma, sigmadot, &
-        dgrho, clxg,clxb,clxc, clxr, clxnu, clxde, delta_p_b, &
-        dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
-        dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+        dgrho, clxg,clxb,clxc, clxr, clxnu, clxde, clxs, delta_p_b, & !ADDED clxs
+        dgq, qg, qr, qde, vb, qs, & !ADDED qs
+        qgdot, qrdot, vbdot, qsdot, & !ADDED qsdot
+        dgpi, pig, pir, pis, pigdot, pirdot, pisdot, diff_rhopi, & !ADDED pis and pisdot
         polter, polterdot, polterddot, octg, octgdot, E(2:3), Edot(2:3), &
         opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
         tau0, tau_maxvis
@@ -245,6 +274,9 @@
     END INTERFACE
 
     procedure(TSource_func), pointer :: custom_sources_func => null()
+
+!!!!!!!!!!!!Above section not in 2016 version
+!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !precalculated arrays
     real(dl) polfac(max_l_evolve),denl(max_l_evolve),vecfac(max_l_evolve),vecfacpol(max_l_evolve)
@@ -381,7 +413,7 @@
         else if (next_switch==tau_switch_ktau) then
             !k tau >> 1, evolve massless neutrino effective fluid up to l=2
             EVout%high_ktau_neutrino_approx=.true.
-            EVout%nq(1:CP%Nu_mass_eigenstates) = nqmax
+            EVout%nq(1:CP%Nu_mass_eigenstates) = nqmax !should EVout be changed to just EV here as in Kanhaiya's code????
             call SetupScalarArrayIndices(EVout)
             call CopyScalarVariableArray(y,yout, EV, EVout)
             y=yout
@@ -572,6 +604,13 @@
         EV%w_ix=0
     end if
 
+!MODIFIED (PLACEMENT?)
+    EV%ste=neq+1 !change from 2009 modification: EV%nvar to neq
+    neq=neq+ (EV%lmaxnr+1)           !different from 2009
+    maxeq=maxeq+ (EV%lmaxnr+1)    !different from 2009
+!!!!!!!!!!!!!!!!!!
+!2009 modifications:EV%ste=EV%nvar+1; EV%nvar=EV%nvar+EV%lmaxnr+1
+
     !Massive neutrinos
     if (CP%Num_Nu_massive /= 0) then
         EV%has_nu_relativistic = any(EV%nq(1:CP%Nu_Mass_eigenstates)/=nqmax)
@@ -629,6 +668,11 @@
         yout(EVout%w_ix)=y(EV%w_ix)
         yout(EVout%w_ix+1)=y(EV%w_ix+1)
     end if
+
+!MODIFIED: section added 30 July 2018....should this be kept?
+    yout(EVout%ste) = y(EV%ste)
+    yout(EVout%ste+1) = y(EV%ste+1)
+!!!!!!!!!!!
 
     if (.not. EV%no_phot_multpoles .and. .not. EVout%no_phot_multpoles) then
         if (EV%TightCoupling .or. EVOut%TightCoupling) then
@@ -806,6 +850,7 @@
     end if
 
     EV%high_ktau_neutrino_approx = .false.
+
     if (CP%WantScalars) then
         EV%TightCoupling=.true.
         EV%no_phot_multpoles =.false.
@@ -835,8 +880,6 @@
                 EV%lmaxgpol=EV%lmaxgpol*2
             end if
         end if
-
-
 
 
         if (EV%TransferOnly) then
@@ -871,11 +914,9 @@
         EV%nvar=0
     end if
 
-
-! MODIFIED
-    EV%ste=EV%nvar+1
-    !EV%nvar=EV%nvar+2*EV%lmaxnr+1
-    EV%nvar=EV%nvar+EV%lmaxnr+1
+! MODIFIED ?IS THIS PLACEMENT CORRECT?
+!    EV%ste=EV%nvar+1
+!    EV%nvar=EV%nvar+EV%lmaxnr+1
 
     if (CP%WantTensors) then
         EV%TensTightCoupling = .true.
@@ -1414,7 +1455,7 @@
          i_qg=5,i_qr=6,i_vb=7,i_pir=8, i_eta=9, i_aj3r=10,i_clxde=11,i_vde=12,i_clxs=13,i_qs=14,i_pis=15!,i_vc=16,i_pic=17
     integer, parameter :: i_max = i_pis
     !Note: i_vde formerly i_vq, which was changed to i_pis for modification
-!mod ends
+!!!!!!!!!!!!!!!!!!!!!!
     real(dl) initv(6,1:i_max), initvec(1:i_max)
 
     nullify(EV%OutputTransfer) !Should not be needed, but avoids issues in ifort 14
@@ -1474,12 +1515,12 @@
 !MODIFIED
     !om = (grhob+grhoc)/sqrt(3*(grhog+grhonu))
     om = (grhob+grhoc)/sqrt(3*(grhog+grhonu+grhos))
-
+!!!!!!!!
     omtau=om*tau
 !MODIFIED
     !Rv=grhonu/(grhonu+grhog)
     Rv=grhonu/(grhonu+grhog+grhos)
-
+!!!!!!!!!!!
     Rg = 1-Rv
     Rc=CP%omegac/(CP%omegac+CP%omegab)
     Rb=1-Rc
@@ -1586,6 +1627,7 @@
     do l=3,EV%lmaxnr
        y(l+EV%ste) = 0.0d0
     end do
+!!!!!!!!!!!!!!!!
 
     !  Baryons
     y(4)=InitVec(i_clxb)
@@ -1836,6 +1878,7 @@
 
 !MODIFIED
     real(dl) pis,clxs,qs,grhos_t,pisdot,clxsdot,qsdot !new variables
+!!!!!!!!!!!!!!!!!!!!!
 
     k=EV%k_buf
     k2=EV%k2_buf
@@ -1847,17 +1890,14 @@
 
     !  CDM variables
     clxc=ay(3)
-!MODIFIED: add CDM variables
-    !clxs = 4.0/3.0*clxc
-    !if (a>0.999) write(1,'(10E15.5)') k,a,clxs,4.0/3.0*clxc
+
+!MODIFIED: add phdm to CDM variables
     clxs=ay(EV%ste)
     qs=ay(EV%ste+1)
     pis=ay(EV%ste+2)
     qsdot = ayprime(EV%ste+1) !placement?
     pisdot = ayprime(EV%ste+2) !placement?
-
-!clxs = 0.01
-!write(1,'(10E15.5)') k,a,clxs,clxc
+!!!!!!!!!!!!!!!!!
 
     !  Baryon variables
     clxb=ay(4)
@@ -1869,7 +1909,8 @@
 ! MODIFIED
    !grhoc_t=grhoc/a
     grhoc_t=grhoc*a**(2-io) !added
-    grhos_t=grhos*a**(2-io) !added
+    grhos_t=grhos*a**(2-io) !added !Kanhaia did not include this here?
+!!!!!!!!!!!!!!!!!!!!
     grhor_t=grhornomass/a2
     grhog_t=grhog/a2
     if (w_lam==-1._dl) then
@@ -1885,6 +1926,7 @@
         call thermo(tau,cs2,opacity)
     end if
 
+!Kanhaiya's code missing following 2; has gpres=0 and grho_matter = grhob_t+grhoc_t here??????????/
     gpres_nu=0
     grhonu_t=0
 
@@ -1895,13 +1937,14 @@
     dgq=grhob_t*vb
 
     if (CP%Num_Nu_Massive > 0) then
-        call MassiveNuVars(EV,ay,a,grhonu_t,gpres_nu,dgrho_matter,dgq, wnu_arr)
+        call MassiveNuVars(EV,ay,a,grhonu_t,gpres_nu,dgrho_matter,dgq, wnu_arr)  !Kanhaiya's code calls grho_matter instead of grhonu_t, gpres instead of gpres_nu???
     end if
 
-    grho_matter=grhonu_t+grhob_t+grhoc_t !massive neutrinos + baryons + cdm
+    grho_matter=grhonu_t+grhob_t+grhoc_t !massive neutrinos + baryons + cdm  !Kanhaiya's code does not have this line here
     grho = grho_matter+grhor_t+grhog_t+grhov_t
 !MODIFIED
-    grho = grho + grhos_t !add dark radiation component
+    grho = grho + grhos_t !add dark radiation component !Kanhaiya does not add this here...?
+!!!!!!!!!!
 
     if (CP%flat) then
         adotoa=sqrt(grho/3)
@@ -1912,6 +1955,7 @@
     end if
 
     dgrho = dgrho_matter
+!!Kanhaiya adds: dgrho = dgrho_matter + clxs*grhos*a**(2-io_phdm) to replace above???
 
     if (w_lam /= -1 .and. w_Perturb) then
         clxde=ay(EV%w_ix)
@@ -1935,6 +1979,8 @@
         pir =ay(EV%r_ix+2)
     endif
 
+!Kanhaiya adds clxs = ay(EV%ste) here...? seems unnecessary/redundant....?
+
     if (EV%no_phot_multpoles) then
         if (.not. EV%no_nu_multpoles) then
             z=(0.5_dl*dgrho/k + etak)/adotoa
@@ -1957,11 +2003,13 @@
     dgrho=dgrho + grhog_t*clxg+grhor_t*clxr !matter + photons + neutrinos
 !MODIFIED
     dgrho = dgrho + grhos_t*clxs !add dark radiation component
+!!!!!!!!!! Kanhaiya doesn't add this modification here... but it is included earlier in his code...
 
     !  8*pi*a*a*SUM[(rho_i+p_i)*v_i]
     dgq=dgq + grhog_t*qg+grhor_t*qr
 !MODIFIED
     dgq = dgq + grhos_t*qs !add dark radiation component
+!!!!!!!!!!!!!!! Kanhaiya doesn't include this modification....?
 
     !  Photon mass density over baryon mass density
     photbar=grhog_t/grhob_t
@@ -1989,6 +2037,7 @@
         ayprime(EV%w_ix+1) = (-adotoa*(1-3*cs2_lam)*qde + k*cs2_lam*clxde)/(1+w_lam)
     end if
 
+!Kanhaiya's code does not put eqns of motion here....?
     !  CDM equation of motion
     clxcdot=-k*z
     ayprime(3)=clxcdot
@@ -1997,7 +2046,7 @@
     ayprime(EV%ste)=clxsdot
     qsdot=k*(clxs-2._dl*pis)/3._dl-adotoa/(1._dl+CP%alpha)*qs
     ayprime(EV%ste+1)=qsdot
-    pisdot=k*(0.4_dl*qs-0.6_dl*ay(31)+8._dl/15._dl*sigma)-adotoa/(1._dl+CP%alpha)*pis
+    pisdot=k*(0.4_dl*qs-0.6_dl*ay(EV%ste+3)+8._dl/15._dl*sigma)-adotoa/(1._dl+CP%alpha)*pis
     ayprime(EV%ste+2)=pisdot
     do l=3,EV%lmaxnr-1
        ayprime(l+EV%ste)=k*denl(l)*(l*ay(l+EV%ste-1) -(l+1)*ay(l+EV%ste+1))-adotoa/(1._dl+CP%alpha)*ay(l+EV%ste)
@@ -2005,7 +2054,7 @@
 !Truncate the sterile neutrino expansion
     ayprime(EV%lmaxnr+EV%ste)=k*ay(EV%lmaxnr+EV%ste-1)-(EV%lmaxnr+1)/tau*ay(EV%lmaxnr+EV%ste)-&
          adotoa/(1._dl+CP%alpha)*ay(EV%lmaxnr+EV%ste)
-!end of eqn mod
+!!!!!!!!!!!!!!!
 
 
     !  Baryon equation of motion.
@@ -2261,12 +2310,12 @@
         dgpi  = grhor_t*pir + grhog_t*pig
 !MODIFIED:
         dgpi = dgpi + grhos_t*pis
-
+!!!!!!!!!!!!!!!!
         dgpi_diff = 0  !sum (3*p_nu -rho_nu)*pi_nu
         pidot_sum = grhog_t*pigdot + grhor_t*pirdot
 ! MODIFIED
-      pidot_sum = pidot_sum + grhos_t*pisdot !add dark radiation componenet
-
+        pidot_sum = pidot_sum + grhos_t*pisdot !add dark radiation component
+!!!!!!!!!!!!!!
         clxnu =0
         if (CP%Num_Nu_Massive /= 0) then
             call MassiveNuVarsOut(EV,ay,ayprime,a, dgpi=dgpi, clxnu_all=clxnu, &
@@ -2274,9 +2323,9 @@
         end if
         diff_rhopi = pidot_sum - (4*dgpi+ dgpi_diff)*adotoa
         gpres=gpres_nu+ (grhog_t+grhor_t)/3 +grhov_t*w_lam
-!MODIFIED
-!right placement?
+!MODIFIED!right placement?
         gpres=gpres + grhos_t/3.0 !add dark radiation component
+!!!!!!!!!!!
 
         phi = -((dgrho +3*dgq*adotoa/k)/EV%Kf(1) + dgpi)/(2*k2)
 
@@ -2288,8 +2337,8 @@
             EV%OutputTransfer(Transfer_g) = clxg
             EV%OutputTransfer(Transfer_r) = clxr
 !MODIFIED
-!Note: no longer dividing by k2, adjusted accordingly
             EV%OutputTransfer(Transfer_s) = clxs !added this
+!Kanhaiya then added: clxnu_all =0 , then dgpi formula, then ifNum_Nu_massive statement here...???
             EV%OutputTransfer(Transfer_nu) = clxnu
             EV%OutputTransfer(Transfer_tot) =  dgrho_matter/grho_matter !includes neutrinos
             EV%OutputTransfer(Transfer_nonu) = (grhob_t*clxb+grhoc_t*clxc)/(grhob_t + grhoc_t)
@@ -2300,6 +2349,8 @@
             EV%OutputTransfer(Transfer_Newt_vel_baryon) = -k*(vb + sigma)/adotoa
             EV%OutputTransfer(Transfer_vel_baryon_cdm) = vb
         end if
+!Kanhaia puts equations of motion here...?
+
         if (associated(EV%OutputSources)) then
 
             call IonizationFunctionsAtTime(tau, opacity, dopacity, ddopacity, &
@@ -2349,15 +2400,30 @@
                 end if
             end if
             if (associated(EV%CustomSources)) then
+!MODIFIED [July 30]
+!                call custom_sources_func(EV%CustomSources, tau, a, adotoa, grho, gpres,w_lam, cs2_lam, &
+!                    grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+!                    k, etak, ayprime(2), phi, phidot, sigma, sigmadot, &
+!                    dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, cs2*clxb, &
+!                    dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
+!                    dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+!                    polter, polterdot, polterddot, octg, octgdot, E, Edot, &
+!                    opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
+!                    tau0, tau_maxvis, EV%Kf,f_K)
                 call custom_sources_func(EV%CustomSources, tau, a, adotoa, grho, gpres,w_lam, cs2_lam, &
                     grhob_t,grhor_t,grhoc_t,grhog_t,grhov_t,grhonu_t, &
+                    grhos_t, & !ADDED
                     k, etak, ayprime(2), phi, phidot, sigma, sigmadot, &
-                    dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, cs2*clxb, &
-                    dgq, qg, qr, qde, vb, qgdot, qrdot, vbdot, &
-                    dgpi, pig, pir, pigdot, pirdot, diff_rhopi, &
+                    dgrho, clxg,clxb,clxc,clxr, clxnu, clxde, clxs, & !ADDED clxs
+                    cs2*clxb, &
+                    dgq, qg, qr, qde, vb, &
+                    qs, & !ADDED
+                    qgdot, qrdot, vbdot, qsdot, & !ADDED qsdot
+                    dgpi, pig, pir, pis, pigdot, pirdot, pisdot, diff_rhopi, & !ADDED pis and pisdot
                     polter, polterdot, polterddot, octg, octgdot, E, Edot, &
                     opacity, dopacity, ddopacity, visibility, dvisibility, ddvisibility, exptau, &
                     tau0, tau_maxvis, EV%Kf,f_K)
+!!!!!!!!!!!!!!!!!!!
             end if
         end if
     end if

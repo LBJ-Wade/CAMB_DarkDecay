@@ -1784,29 +1784,40 @@
     use Errors
     implicit none
     public
+
+
 !MODIFIED
     integer, parameter :: Transfer_kh =1, Transfer_cdm=2,Transfer_b=3,Transfer_g=4, &
         Transfer_r=5, Transfer_nu = 6,  & !massless and massive neutrino
-!    Transfer_tot=7, Transfer_nonu=8, Transfer_tot_de=9,  &
+    Transfer_tot=7, Transfer_nonu=8, Transfer_tot_de=9,  &
 !        ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
-!        Transfer_Weyl = 10, & ! the Weyl potential, for lensing and ISW
-!    Transfer_Newt_vel_cdm=11, Transfer_Newt_vel_baryon=12,   & ! -k v_Newtonian/H
-!    Transfer_vel_baryon_cdm = 13 !relative velocity of baryons and CDM
+        Transfer_Weyl = 10, & ! the Weyl potential, for lensing and ISW
+    Transfer_Newt_vel_cdm=11, Transfer_Newt_vel_baryon=12,   & ! -k v_Newtonian/H
+    Transfer_vel_baryon_cdm = 13, & !relative velocity of baryons and CDM
+    Transfer_s=14 !ADDED
 
-    Transfer_s=7, &
-    Transfer_tot=8, Transfer_nonu=9, Transfer_tot_de=10,  &
-        ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
-        Transfer_Weyl = 11, & ! the Weyl potential, for lensing and ISW
-    Transfer_Newt_vel_cdm=12, Transfer_Newt_vel_baryon=13,   & ! -k v_Newtonian/H
-    Transfer_vel_baryon_cdm = 14 !relative velocity of baryons and CDM
-!Added Transfer_s, increased following Transfer_ by 1
-!Does this make sense?
+!    Transfer_s=7, &
+!    Transfer_tot=8, Transfer_nonu=9, Transfer_tot_de=10,  &
+!        ! total perturbations with and without neutrinos, with neutrinos+dark energy in the numerator
+!        Transfer_Weyl = 11, & ! the Weyl potential, for lensing and ISW
+!    Transfer_Newt_vel_cdm=12, Transfer_Newt_vel_baryon=13,   & ! -k v_Newtonian/H
+!    Transfer_vel_baryon_cdm = 14 !relative velocity of baryons and CDM
+!Added Transfer_s, increased following Transfer_ by 1 ???
 
-    integer, parameter :: Transfer_max = Transfer_vel_baryon_cdm
+!    integer, parameter :: Transfer_max = Transfer_vel_baryon_cdm
+
+    integer, parameter :: Transfer_max = Transfer_s !CHANGED
+
 !MODIFIED: inserted 's  ' between mass_nu and total
+!    character(LEN=name_tag_len) :: Transfer_name_tags(Transfer_max-1) = &
+!        ['CDM     ', 'baryon  ', 'photon  ', 'nu      ', 'mass_nu ', 's       ', 'total   ', &
+!        'no_nu   ', 'total_de', 'Weyl    ', 'v_CDM   ', 'v_b     ', 'v_b-v_c ']
+
+!MODIFIED: added phdm
     character(LEN=name_tag_len) :: Transfer_name_tags(Transfer_max-1) = &
-        ['CDM     ', 'baryon  ', 'photon  ', 'nu      ', 'mass_nu ', 's       ', 'total   ', &
-        'no_nu   ', 'total_de', 'Weyl    ', 'v_CDM   ', 'v_b     ', 'v_b-v_c ']
+        ['CDM     ', 'baryon  ', 'photon  ', 'nu      ', 'mass_nu ', 'total   ', &
+        'no_nu   ', 'total_de', 'Weyl    ', 'v_CDM   ', 'v_b     ', 'v_b-v_c ', 'phdm    ']
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     logical :: transfer_interp_matterpower  = .true. !output regular grid in log k
     !set to false to output calculated values for later interpolation
@@ -2493,7 +2504,7 @@
     do i_PK=1, CP%Transfer%PK_num_redshifts
         if (FileNames(i_PK) /= '') then
             i = CP%Transfer%PK_redshifts_index(i_PK)
-            unit = open_file_header(FileNames(i_PK), 'k/h', transfer_name_tags, 14)
+            unit = open_file_header(FileNames(i_PK), 'k/h', transfer_name_tags, 14) !should 14 be increased to 15???
             do ik=1,MTrans%num_q_trans
                 if (MTrans%TransferData(Transfer_kh,ik,i)/=0) then
                     write(unit,'(*(E15.6))') MTrans%TransferData(Transfer_kh:Transfer_max,ik,i)
